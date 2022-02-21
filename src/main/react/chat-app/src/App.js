@@ -26,10 +26,12 @@ class App extends React.Component {
 
 render(){
   return(
-    <div className="App">
+    !this.state.isLoading && this.state.user != null  ? (
+      <div className="App">
         <TopNavBar user={this.state.user}/>
         <ChatBox  user={this.state.user}/>
-    </div>
+      </div>
+    ): <div className="card card-body container"> User is not loaded!</div>
   );
 }
 

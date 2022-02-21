@@ -12,11 +12,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.sun.istack.NotNull;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity(name = "USERS")
 @Setter
 @Getter
+@NoArgsConstructor
 public class User {
 
 	@Id
@@ -30,14 +32,11 @@ public class User {
 	private String firstName;
 
 	@NotNull
-	@Size(min = 3, max = 50)
+	@Size(min = 1, max = 50)
 	@Column(nullable = false)
 	private String lastName;
-
-	@NotNull
-	@Size(min = 5, max = 50)
-	@Column(nullable=false, updatable = false, unique = true)
-	private String email;
+	
+	private String picture;
 	
 	@NotNull
 	@Size(min = 5, max = 200)
@@ -58,4 +57,11 @@ public class User {
 	public String getFullName() {
 		return firstName+" "+lastName;
 	}
+	
+	public User(String firstName, String lastName, String userName) {
+		this.firstName =firstName;
+		this.lastName = lastName;
+		this.userName = userName;
+	}
+	
 }

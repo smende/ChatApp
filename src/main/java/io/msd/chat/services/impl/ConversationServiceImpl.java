@@ -1,14 +1,16 @@
 package io.msd.chat.services.impl;
 
-import java.security.Principal;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
 import io.msd.chat.domain.Conversation;
@@ -16,6 +18,7 @@ import io.msd.chat.domain.Recipient;
 import io.msd.chat.repo.ConversationRepo;
 import io.msd.chat.services.ConversationService;
 import io.msd.chat.services.RecipientsService;
+import io.msd.chat.services.UserService;
 
 @Service
 @Transactional
@@ -27,6 +30,9 @@ public class ConversationServiceImpl implements ConversationService{
 	@Autowired
 	private RecipientsService recipientsService; 
 	
+	@Autowired
+	private UserService userService;
+	
 	@Override
 	public Conversation getById(long id) {
 		 Conversation conv = conversationRepo.findById(id).get();
@@ -35,16 +41,16 @@ public class ConversationServiceImpl implements ConversationService{
 	}
 
 	@Override
-	public List<Conversation> getAllRelatedToCurrentUser(Principal principal) {
+	public List<Conversation> getAllRelatedToCurrentUser(OAuth2User principal) {
 		
-		List<Long> conversationIds = recipientsService.getAllConversationsIdsByUserName(principal.getName());
+		List<Long> conversationIds = recipientsService.getAllConversationsIdsByUserName(principal.getAttribute("email"));
 		
 		List<Conversation> conversations = new ArrayList<>();
 		
 		conversationIds.forEach(a->{
 			
 			Conversation conv = getById(a);
-			List<Recipient> others = conv.getRecipients().stream().filter(b -> !principal.getName().equals(b.getUserName() ) ).collect(Collectors.toList()) ;
+			List<Recipient> others = conv.getRecipients().stream().filter(b -> !principal.getAttribute("email").equals(b.getUserName() ) ).collect(Collectors.toList()) ;
 			
 			conv.setOthers(others);
 			
@@ -56,9 +62,9 @@ public class ConversationServiceImpl implements ConversationService{
 	}
 
 	@Override
-	public Conversation getConversationByCurrentUserNameAndAnotherRecipientName(Principal principal, String userName) {
+	public Conversation getConversationByCurrentUserNameAndAnotherRecipientName(OAuth2User principal, String userName) {
 
-		List<Long> conversationIds = recipientsService.getAllConversationsIdsByUserName(principal.getName());
+		List<Long> conversationIds = recipientsService.getAllConversationsIdsByUserName(principal.getAttribute("email"));
 		
 		List<Conversation> conversations = new ArrayList<>();
 		
@@ -68,7 +74,7 @@ public class ConversationServiceImpl implements ConversationService{
 
 			List<Recipient> others = conv.getRecipients().stream().filter(b -> {
 				
-				return !principal.getName().equals(b.getUserName()) && userName.equals(b.getUserName());
+				return !principal.getAttribute("email").equals(b.getUserName()) && userName.equals(b.getUserName());
 			
 			}).collect(Collectors.toList()) ;			
 			conv.setOthers(others);
@@ -81,6 +87,21 @@ public class ConversationServiceImpl implements ConversationService{
 	}	
 	
 	@Override
+	public Conversation getConversationByCurrentUserNameAndAnotherRecipientNameAndCreateIfNotFound(OAuth2User principal, String userName) throws Exception {
+
+		Conversation conversatin = getConversationByCurrentUserNameAndAnotherRecipientName(principal, userName);
+		
+		if(conversatin != null)			
+			return conversatin;
+		
+		Set<String> userNames = new HashSet<>();
+					userNames.add(userName);
+					userNames.add(principal.getAttribute("email"));
+					
+		return createNewConversation(userNames);
+	}	
+	
+	@Override
 	public Conversation createNewConversation(Set<String> userNames) throws Exception {
 		
 //		List<Recipient> recipients = conversation.getRecipients();
@@ -89,6 +110,25 @@ public class ConversationServiceImpl implements ConversationService{
 			throw(new Exception("Need atleast 2 recipient usernames"));
 		}
 
+		List<String> invalidUserNames = userNames.stream().filter(userName ->{
+			
+			boolean isInvalid = false;
+						
+			try {
+				userService.getByUserName(userName);	
+			}catch(NoSuchElementException e) {
+				isInvalid = true;
+			}
+						
+			return isInvalid;
+			
+		}).collect(Collectors.toList());
+		
+		if(invalidUserNames != null && invalidUserNames.size() >0) {
+			throw(new Exception("Invalid username(s) : "+invalidUserNames.toString()));			
+		}
+		
+		
 		Conversation newConversation = conversationRepo.save(new Conversation());
 		
 		

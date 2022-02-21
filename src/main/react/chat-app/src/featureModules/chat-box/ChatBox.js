@@ -1,6 +1,7 @@
-import React from "react";
+import React, { Fragment } from "react";
 import "./ChatBox.css";
 import httpClient from "react-http-client";
+import NewConversation from "../new-conversation/NewConversation";
 
 class ChatBox extends React.Component{
 
@@ -35,6 +36,8 @@ class ChatBox extends React.Component{
 
     render(){
         return(
+            <Fragment>
+            <NewConversation/>
             <div className="chatBox container">
                 <div className="conversationsList">
                     <div className="card">
@@ -46,7 +49,7 @@ class ChatBox extends React.Component{
                                 <ul className="list-group">
                                     {
                                         this.state.conversations.map(a => {
-                                            return <button onClick={b => this.selectConversation(a)} className={"list-group-item leftAlign "+(this.state.selected && this.state.selected.id == a.id ? "active" : '')}  key={a.id}>{a.others[0].user.fullName}</button>
+                                            return <button onClick={b => this.selectConversation(a)} className={"list-group-item leftAlign "+(this.state.selected && this.state.selected.id === a.id ? "active" : '')}  key={a.id}>{a.others[0].user.userName}</button>
                                         })
                                     }
                                 </ul>
@@ -58,14 +61,14 @@ class ChatBox extends React.Component{
                 <div className="messages">
                     <div className="card">
                         <div className="card-header">
-                            <h4>{this.state.selected && this.state.selected.others[0].user.fullName}</h4>
+                            <h4>{this.state.selected ? this.state.selected.others[0].user.userName : 'Select any conversation...'}</h4>
                         </div>
                         <div className="card-body msgsBody">
                                 <div className="msgsDiv">
                                     {
                                         this.state.selectedConversationsMessages.map(msg => {
                                             return (
-                                            <div className={"msgBlock "+(this.props.user.userName == msg.fromUser.userName ? 'ownMsg': '')} key={msg.id}>
+                                            <div className={"msgBlock "+(this.props.user.userName === msg.fromUser.userName ? 'ownMsg': '')} key={msg.id}>
                                                 <div>
                                                     {msg.message}
                                                 </div>
@@ -82,7 +85,7 @@ class ChatBox extends React.Component{
                                                 <textarea className="newMsg" id="newMsg" onChange={this.onNewMsgValueChange.bind(this)} ></textarea>
                                         </div>
                                         <div>
-                                                <input className={"btn btn-primary "+(this.state.newMsg.trim().length ==0 ? 'disabled' : '')} type="submit" value="Send" />
+                                                <input className={"btn btn-primary "+(this.state.newMsg.trim().length ===0 ? 'disabled' : '')} type="submit" value="Send" />
                                         </div>
                                     </div>
                             </form>
@@ -91,6 +94,7 @@ class ChatBox extends React.Component{
 
                 </div>
             </div>
+            </Fragment>
         );
     }
 
@@ -106,7 +110,7 @@ class ChatBox extends React.Component{
 
     loadMessagesBySelectedConversation(conversationId){
 
-        if(conversationId == undefined)
+        if(conversationId === undefined)
             return;
 
         httpClient.get("/api/messages/conversation/"+conversationId).then(messages =>{
@@ -122,7 +126,8 @@ class ChatBox extends React.Component{
 
         let msg = this.state.newMsg;
 
-        if(msg == null || msg.trim().length == 0 || this.state.selected == null){
+        if(msg === null || msg.trim().length === 0 || this.state.selected === null){
+            this.setState({msg:null});
             return;
         }
 

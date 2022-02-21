@@ -1,6 +1,5 @@
 package io.msd.chat.services.impl;
 
-import java.security.Principal;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -8,6 +7,7 @@ import java.util.Set;
 import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
 import io.msd.chat.domain.Conversation;
@@ -42,9 +42,9 @@ public class MessageServiceImpl implements MessageService {
 	}
 
 	@Override
-	public Message addNewMessage(Message msg, Principal principal) throws Exception {
+	public Message addNewMessage(Message msg, OAuth2User principal) throws Exception {
 		
-		User fromUser = userService.getByUserName(principal.getName());
+		User fromUser = userService.getByUserName(principal.getAttribute("email"));
 		
 		User toUser = null;
 		Conversation conversation = null;
@@ -67,7 +67,7 @@ public class MessageServiceImpl implements MessageService {
 		 */
 
 			Set<String> userNames = new HashSet<>();
-						userNames.add(principal.getName());
+						userNames.add(principal.getAttribute("email"));
 						userNames.add(msg.getToUser().getUserName());
 			
 			conversation = conversationService.createNewConversation(userNames);		
