@@ -31,3 +31,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### VS Code ###
+.vscode/
+**/webapp/*
+**/node/*
+**/node_modules/*
+**/resources/static/*
