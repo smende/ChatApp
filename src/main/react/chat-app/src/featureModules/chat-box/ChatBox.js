@@ -3,35 +3,35 @@ import "./ChatBox.css";
 import httpClient from "react-http-client";
 import NewConversation from "../new-conversation/NewConversation";
 
+import ConversationList from "../conversation-list/ConversationList";
+import Messages from "../messages/Messages";
+
 class ChatBox extends React.Component{
 
     constructor(props){
         super(props);
         this.state = {
             conversations : [],
-            selected : null,
-            selectedConversationsMessages : [],
-            messagesByConvId : {},
-            newMsg : ""
+            selected : null
          }
 
-         this.addNewMessage = this.addNewMessage.bind(this);
+         this.selectConversation = this.selectConversation.bind(this);
+         this.messagesRef = React.createRef();
     }
 
     componentDidMount(){
         httpClient.get("/api/conversations/own").then(convs =>{
             this.setState({conversations : convs});
             if(convs != null && convs.length > 0  ){
-                this.setState({selected:convs[0]})
-                this.loadMessagesBySelectedConversation(this.state.selected.id);
+                this.selectConversation(convs[0]);
             }
             else
-                this.setState({selected:null})
+                this.selectConversation(null);
 
         }).catch(err =>{
-            this.setState({conversations : [], selected:null});
+            this.setState({conversations : []});
+            this.selectConversation(null);
         });
-        
     }
 
     render(){
@@ -39,60 +39,15 @@ class ChatBox extends React.Component{
             <Fragment>
             <NewConversation/>
             <div className="chatBox container">
-                <div className="conversationsList">
-                    <div className="card">
-                        <div className="card-header">
-                                <h4>Conversations</h4>
-                        </div>
-                        <div className="convsBody">
-                            <div className="convsDiv">
-                                <ul className="list-group">
-                                    {
-                                        this.state.conversations.map(a => {
-                                            return <button onClick={b => this.selectConversation(a)} className={"list-group-item leftAlign "+(this.state.selected && this.state.selected.id === a.id ? "active" : '')}  key={a.id}>{a.others[0].user.userName}</button>
-                                        })
-                                    }
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                
+                <ConversationList conversations={this.state.conversations} 
+                                  selectedConversationId={this.state.selected && this.state.selected.id}
+                                  selectConversation={this.selectConversation}/>
 
-                <div className="messages">
-                    <div className="card">
-                        <div className="card-header">
-                            <h4>{this.state.selected ? this.state.selected.others[0].user.userName : 'Select any conversation...'}</h4>
-                        </div>
-                        <div className="card-body msgsBody">
-                                <div className="msgsDiv">
-                                    {
-                                        this.state.selectedConversationsMessages.map(msg => {
-                                            return (
-                                            <div className={"msgBlock "+(this.props.user.userName === msg.fromUser.userName ? 'ownMsg': '')} key={msg.id}>
-                                                <div>
-                                                    {msg.message}
-                                                </div>
-                                                <label className="timeStamp">{msg.createdOn}</label>
-                                            </div>);
-                                        })
-                                    }
-                                </div>
-                        </div>
-                        <div className="card-footer ftr">
-                            <form onSubmit={this.addNewMessage}>
-                                    <div className="ftrMain">
-                                        <div className="w100">
-                                                <textarea className="newMsg" id="newMsg" onChange={this.onNewMsgValueChange.bind(this)} ></textarea>
-                                        </div>
-                                        <div>
-                                                <input className={"btn btn-primary "+(this.state.newMsg.trim().length ===0 ? 'disabled' : '')} type="submit" value="Send" />
-                                        </div>
-                                    </div>
-                            </form>
-                        </div>
-                    </div>
+                <Messages selected={this.state.selected} 
+                          user={this.props.user} 
+                          ref={this.messagesRef} />
 
-                </div>
             </div>
             </Fragment>
         );
@@ -100,56 +55,8 @@ class ChatBox extends React.Component{
 
     selectConversation(conversation){
         this.setState({selected : conversation});
-        this.loadMessagesBySelectedConversation(conversation.id);
+        this.messagesRef.current.loadMessagesBySelectedConversation(conversation != null ? conversation.id : null);
     }
-    
-    onNewMsgValueChange(event){
-        let newMsg = event.target.value;
-        this.setState({newMsg:newMsg});
-    }
-
-    loadMessagesBySelectedConversation(conversationId){
-
-        if(conversationId === undefined)
-            return;
-
-        httpClient.get("/api/messages/conversation/"+conversationId).then(messages =>{
-             this.setState({selectedConversationsMessages : messages});
-        }).catch(err =>{
-            this.setState({selectedConversationsMessages : [] });
-        })
-        
-    }
-
-    addNewMessage(event){
-        event.preventDefault();
-
-        let msg = this.state.newMsg;
-
-        if(msg === null || msg.trim().length === 0 || this.state.selected === null){
-            this.setState({msg:null});
-            return;
-        }
-
-        const msgToSend = {
-            message : msg.trim(),
-            conversation : {
-                id: this.state.selected.id
-            }
-        };
-
-        httpClient.post("/api/messages",msgToSend).then(resp =>{
-
-            this.setState({newMsg : ""});
-            document.getElementById("newMsg").value = "";
-
-            this.loadMessagesBySelectedConversation(this.state.selected.id);
-        }).catch(err =>{
-            console.log(err);
-        })
-
-    }
-
 
 }
 export default ChatBox;

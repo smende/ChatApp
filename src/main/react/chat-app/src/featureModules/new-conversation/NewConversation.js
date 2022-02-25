@@ -13,20 +13,12 @@ class NewConversation extends React.Component {
         this.onFormSubmit = this.onFormSubmit.bind(this);
     }
 
-    componentDidMount(){
-        httpClient.get("/api/user").then(users =>{
-            this.setState({userSearchResults : users});
-        }).catch(err =>{
-            this.setState({userSearchResults : null});
-        })
-    }
-
     render() {
         return (
                 <div className="cards3 container card-body">
                     <form onSubmit={this.onFormSubmit}>
                              <div className="input-group">
-                                <input type="text" className="form-control userEmail" placeholder="Enter email id" id="userEmail" 
+                                <input type="text" className="form-control userEmail" placeholder="Enter email id. Include '@gmail.com' " id="userEmail" 
                                     onChange={this.onEmailIdChange}
                                 />
                                 <button type="submit" className={"btn btn-primary btn-sm "+(this.state.isDisabled ? 'disabled' : '')}>Start new conversation</button>
@@ -41,7 +33,7 @@ class NewConversation extends React.Component {
 
         let value = event.target.value;
 
-        if(value == null || value.trim().length == 0)
+        if(value === null || value.trim().length === 0)
         {
             this.setState({isDisabled : true});
             return;
@@ -56,7 +48,7 @@ class NewConversation extends React.Component {
         let userEmailNode = document.getElementById("userEmail");
         let userEmail = userEmailNode.value;
 
-        if(this.state.isDisabled || userEmail == null || userEmail.trim().length<=0)
+        if(this.state.isDisabled || userEmail === null || userEmail.trim().length<=0)
             return;
 
         httpClient.post("/api/conversations/own-with-other-username/"+userEmail).then(conversation =>{

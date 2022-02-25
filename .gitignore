@@ -38,3 +38,4 @@ build/
 **/node/*
 **/node_modules/*
 **/resources/static/*
+**/build/*
